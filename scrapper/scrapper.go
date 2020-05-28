@@ -105,10 +105,10 @@ func getJobs(page int, url string, mainC chan<- []extractedJob) {
 
 func extractJob(card *goquery.Selection, c chan<- extractedJob) {
 	id, _ := card.Attr("data-jk")
-	title := cleanString(card.Find(".title>a").Text())
-	location := cleanString(card.Find(".sjcl").Text())
-	salary := cleanString(card.Find(".salaryText").Text())
-	summary := cleanString(card.Find(".summary").Text())
+	title := CleanString(card.Find(".title>a").Text())
+	location := CleanString(card.Find(".sjcl").Text())
+	salary := CleanString(card.Find(".salaryText").Text())
+	summary := CleanString(card.Find(".summary").Text())
 
 	c <- extractedJob{
 		id:       id,
@@ -119,13 +119,12 @@ func extractJob(card *goquery.Selection, c chan<- extractedJob) {
 	}
 }
 
-func cleanString(str string) string {
+func CleanString(str string) string {
 	return strings.Join(strings.Fields(strings.TrimSpace(str)), " ")
 }
 
 func writeJobs(jobs []extractedJob) {
 	c := make(chan []string)
-	jobSlice := []string{}
 	file, err := os.Create("jobs.csv")
 	checkErr(err)
 
@@ -140,15 +139,14 @@ func writeJobs(jobs []extractedJob) {
 
 	for _, job := range jobs {
 		go getJobSlice(job, c)
+
 	}
 
 	for i := 0; i < len(jobs); i++ {
-		unitJobSlice := <-c
-		jobSlice = append(jobSlice, unitJobSlice...)
+		jobSlice := <-c
+		err = w.Write(jobSlice)
+		checkErr(err)
 	}
-
-	err = w.Write(jobSlice)
-	checkErr(err)
 }
 
 func getJobSlice(job extractedJob, c chan<- []string) {
